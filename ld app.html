@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ldjouder.net</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0a0d12; color: #e8eaf0; min-height: 100vh; }
+  .header { background: #0d1117; border-bottom: 1px solid #1e2535; padding: 14px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px); }
+  .logo { width: 36px; height: 36px; background: rgba(34,197,94,0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .header-title { font-weight: 700; font-size: 15px; }
+  .header-sub { font-size: 11px; color: #6b7280; }
+  .badge { margin-left: auto; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .badge-active { background: rgba(34,197,94,0.12); color: #22c55e; }
+  .badge-scanning { background: rgba(250,204,21,0.12); color: #facc15; }
+  .badge-threat { background: rgba(239,68,68,0.12); color: #ef4444; }
+  .container { max-width: 500px; margin: 0 auto; padding: 0 20px 40px; }
+  .shield-section { display: flex; flex-direction: column; align-items: center; padding: 32px 0 24px; gap: 16px; }
+  .shield-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+  .shield-icon { width: 110px; height: 110px; border-radius: 50%; background: #13181f; border: 2px solid #22c55e33; display: flex; align-items: center; justify-content: center; font-size: 48px; box-shadow: 0 0 40px rgba(34,197,94,0.1); position: relative; z-index: 1; }
+  .shield-ring { position: absolute; inset: -8px; border-radius: 50%; border: 2px solid rgba(34,197,94,0.15); animation: pulse 2s ease-out infinite; }
+  .shield-ring2 { animation-delay: 0.7s; }
+  @keyframes pulse { 0%{transform:scale(1);opacity:.5} 100%{transform:scale(1.4);opacity:0} }
+  .status-text { font-size: 17px; font-weight: 600; color: #22c55e; }
+  .status-sub { font-size: 11px; color: #6b7280; font-family: monospace; margin-top: 4px; }
+  .scan-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; margin-bottom: 20px; }
+  .scan-btn-start { background: #22c55e; color: #000; box-shadow: 0 4px 20px rgba(34,197,94,0.25); }
+  .scan-btn-start:hover { background: #16a34a; transform: scale(1.01); }
+  .scan-btn-stop { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+  .progress-box { background: #13181f; border: 1px solid #1e2535; border-radius: 14px; padding: 18px; margin-bottom: 20px; display: none; }
+  .progress-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; }
+  .progress-pct { color: #22c55e; font-family: monospace; font-weight: 600; }
+  .progress-bar-bg { background: #1e2535; border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-bar { background: #22c55e; height: 6px; border-radius: 4px; transition: width 0.1s; width: 0%; }
+  .current-file { background: #0d1117; border: 1px solid #1e2535; border-radius: 8px; padding: 8px 12px; margin-top: 12px; font-family: monospace; font-size: 11px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-dot { display: inline-block; width: 6px; height: 6px; background: #22c55e; border-radius: 50%; margin-right: 8px; animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .stat-box { background: #0d1117; border: 1px solid #1e2535; border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-num { font-size: 20px; font-weight: 700; font-family: monospace; }
+  .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .green { color: #22c55e; }
+  .red { color: #ef4444; }
+  .threats-section { margin-bottom: 20px; display: none; }
+  .threats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .threats-title { font-size: 13px; font-weight: 600; color: #ef4444; display: flex; align-items: center; gap: 6px; }
+  .remove-all-btn { background: none; border: none; color: #ef4444; font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+  .remove-all-btn:hover { background: rgba(239,68,68,0.1); }
+  .threat-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; margin-bottom: 6px; }
+  .threat-name { font-size: 13px; font-weight: 500; }
+  .threat-path { font-size: 11px; color: #6b7280; font-family: monospace; }
+  .del-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 6px; }
+  .del-btn:hover { background: rgba(239,68,68,0.1); }
+  .tabs { display: flex; background: #13181f; border: 1px solid #1e2535; border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+  .tab { flex: 1; padding: 8px; border: none; background: none; color: #6b7280; font-size: 12px; cursor: pointer; border-radius: 8px; transition: all 0.15s; font-family: inherit; }
+  .tab.active { background: #0d1117; color: #e8eaf0; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .toggle-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #13181f; border: 1px solid #1e2535; border-radius: 12px; margin-bottom: 8px; }
+  .toggle-left { display: flex; align-items: center; gap: 12px; }
+  .toggle-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(34,197,94,0.12); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .toggle-icon.off { background: #1e2535; }
+  .toggle-label { font-size: 13px; font-weight: 500; }
+  .toggle-desc { font-size: 11px; color: #6b7280; }
+  .switch { position: relative; display: inline-block; width: 42px; height: 24px; }
+  .switch input { display: none; }
+  .slider { position: absolute; inset: 0; background: #1e2535; border-radius: 24px; cursor: pointer; transition: 0.2s; }
+  .slider:before { content:''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #6b7280; border-radius: 50%; transition: 0.2s; }
+  input:checked + .slider { background: #22c55e; }
+  input:checked + .slider:before { transform: translateX(18px); background: #000; }
+  .history-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #13181f; border: 1px solid #1e2535; border-radius: 10px; margin-bottom: 6px; }
+  .history-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 10px; flex-shrink: 0; }
+  .history-date { font-size: 13px; font-weight: 500; }
+  .history-detail { font-size: 11px; color: #6b7280; }
+  .history-badge { font-size: 11px; font-family: monospace; padding: 3px 8px; border-radius: 6px; }
+  .badge-clean { background: rgba(34,197,94,0.1); color: #22c55e; }
+  .badge-threat2 { background: rgba(239,68,68,0.1); color: #ef4444; }
+  .empty-history { text-align: center; padding: 30px; color: #6b7280; font-size: 13px; }
+  .footer { text-align: center; margin-top: 32px; color: #3a4050; font-size: 11px; font-family: monospace; }
+  .stats-overview { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .stat-ov { background: #13181f; border: 1px solid #1e2535; border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-ov-num { font-size: 18px; font-weight: 700; font-family: monospace; }
+  .stat-ov-label { font-size: 10px; color: #6b7280; margin-top: 3px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">🛡️</div>
+  <div>
+    <div class="header-title">ld block</div>
+    <div class="header-sub">Antivirus Pro v4.2.1</div>
+  </div>
+  <div class="badge badge-active" id="status-badge">
+    <div class="badge-dot" style="background:#22c55e"></div>
+    <span id="badge-text">Actif</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="shield-section">
+    <div class="shield-wrap">
+      <div class="shield-ring" id="ring1"></div>
+      <div class="shield-ring shield-ring2" id="ring2"></div>
+      <div class="shield-icon" id="shield-icon">🛡️</div>
+    </div>
+    <div style="text-align:center">
+      <div class="status-text" id="status-text">Système protégé</div>
+      <div class="status-sub" id="status-date"></div>
+    </div>
+  </div>
+
+  <button class="scan-btn scan-btn-start" id="scan-btn" onclick="toggleScan()">
+    🔍 Lancer l'analyse complète
+  </button>
+
+  <div class="progress-box" id="progress-box">
+    <div class="progress-header">
+      <span>Progression</span>
+      <span class="progress-pct" id="pct-text">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar" id="prog-bar"></div></div>
+    <div class="current-file"><span class="file-dot"></span><span id="cur-file">Initialisation...</span></div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-num green" id="files-scanned">0</div><div class="stat-label">Fichiers analysés</div></div>
+      <div class="stat-box"><div class="stat-num" id="threats-count" style="color:#22c55e">0</div><div class="stat-label">Menaces trouvées</div></div>
+    </div>
+  </div>
+
+  <div class="threats-section" id="threats-section">
+    <div class="threats-header">
+      <div class="threats-title">⚠️ Menaces détectées (<span id="threat-count-label">0</span>)</div>
+      <button class="remove-all-btn" onclick="removeAllThreats()">🗑️ Tout supprimer</button>
+    </div>
+    <div id="threats-list"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('protection')">⚙️ Protection</button>
+    <button class="tab" onclick="showTab('stats')">📊 Statistiques</button>
+    <button class="tab" onclick="showTab('history')">🕓 Historique</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-protection">
+    <div class="toggle-item">
+      <div class="toggle-left">
+        <div class="toggle-icon" id="icon-realtime">🛡️</div>
+        <div><div class="toggle-label">Protection temps réel</div><div class="toggle-desc">Surveillance active des processus</div></div>
+      </div>
+      <label class="switch"><input type="checkbox" checked onchange="toggleProt('realtime',this)"><div class="slider"></div></label>
+    </div>
+    <div class="toggle-item">
+      <div class="toggle-left">
+        <div class="toggle-icon" id="icon-network">📡</div>
+        <div><div class="toggle-label">Pare-feu réseau</div><div class="toggle-desc">Filtrage des connexions entrantes</div></div>
+      </div>
+      <label class="switch"><input type="checkbox" checked onchange="toggleProt('network',this)"><div class="slider"></div></label>
+    </div>
+    <div class="toggle-item">
+      <div class="toggle-left">
+        <div class="toggle-icon" id="icon-files">🔍</div>
+        <div><div class="toggle-label">Analyse fichiers</div><div class="toggle-desc">Scan automatique des téléchargements</div></div>
+      </div>
+      <label class="switch"><input type="checkbox" checked onchange="toggleProt('files',this)"><div class="slider"></div></label>
+    </div>
+    <div class="toggle-item">
+      <div class="toggle-left">
+        <div class="toggle-icon off" id="icon-web">🌐</div>
+        <div><div class="toggle-label">Protection web</div><div class="toggle-desc">Blocage des sites malveillants</div></div>
+      </div>
+      <label class="switch"><input type="checkbox" onchange="toggleProt('web',this)"><div class="slider"></div></label>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-stats">
+    <div class="stats-overview">
+      <div class="stat-ov"><div class="stat-ov-num" id="stat-lastscan">—</div><div class="stat-ov-label">Dernier scan</div></div>
+      <div class="stat-ov"><div class="stat-ov-num" id="stat-totalscans">0</div><div class="stat-ov-label">Scans totaux</div></div>
+      <div class="stat-ov"><div class="stat-ov-num" id="stat-removed">0</div><div class="stat-ov-label">Menaces supprimées</div></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-history">
+    <div class="empty-history" id="empty-history">🕓 Aucun scan effectué</div>
+    <div id="history-list"></div>
+  </div>
+
+  <div class="footer">ld block © 2026 · Base de données: 12,847,293 signatures<br>⚡ Application autonome — fonctionne hors ligne</div>
+</div>
+
+<script>
+const fakePaths = [
+  'C:\\Windows\\System32\\kernel32.dll','C:\\Windows\\System32\\ntdll.dll',
+  'C:\\Program Files\\Chrome\\chrome.exe','C:\\Users\\Documents\\rapport.pdf',
+  'C:\\Windows\\System32\\drivers\\tcpip.sys','C:\\Program Files\\Office\\winword.exe',
+  'C:\\Users\\Downloads\\setup_v2.exe','C:\\Windows\\SysWOW64\\msvcrt.dll',
+  'C:\\ProgramData\\config\\settings.ini','C:\\Users\\AppData\\Local\\Temp\\cache.tmp',
+  'C:\\Windows\\System32\\advapi32.dll','C:\\Program Files\\Firefox\\firefox.exe',
+  'C:\\Users\\Desktop\\notes.txt','C:\\Windows\\System32\\user32.dll',
+  'C:\\Program Files\\Java\\jre\\bin\\java.exe',
+];
+const fakeThreats = [
+  {name:'Trojan.GenericKD.46542',type:'trojan',path:'C:\\Users\\Downloads\\crack_v3.exe'},
+  {name:'PUP.Optional.BundleInstaller',type:'pup',path:'C:\\Temp\\installer_bundle.exe'},
+  {name:'Malware.AI.1287453',type:'malware',path:'C:\\Users\\AppData\\Roaming\\svc_host.exe'},
+  {name:'Trojan.Ransom.WannaCry',type:'trojan',path:'C:\\Windows\\Temp\\taskeng.exe'},
+];
+
+let isScanning = false;
+let scanInterval = null;
+let threats = [];
+let history = [];
+let totalRemoved = 0;
+let totalScans = 0;
+
+// Set date
+document.getElementById('status-date').textContent = new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function toggleProt(id, el) {
+  const icon = document.getElementById('icon-' + id);
+  if (el.checked) { icon.classList.remove('off'); } else { icon.classList.add('off'); }
+}
+
+function setStatus(s) {
+  const badge = document.getElementById('status-badge');
+  const badgeText = document.getElementById('badge-text');
+  const statusText = document.getElementById('status-text');
+  const shieldIcon = document.getElementById('shield-icon');
+  badge.className = 'badge';
+  if (s === 'protected') {
+    badge.classList.add('badge-active'); badgeText.textContent = 'Actif';
+    statusText.textContent = 'Système protégé'; statusText.style.color = '#22c55e';
+    shieldIcon.textContent = '🛡️';
+  } else if (s === 'scanning') {
+    badge.classList.add('badge-scanning'); badgeText.textContent = 'Scan';
+    statusText.textContent = 'Analyse en cours...'; statusText.style.color = '#facc15';
+    shieldIcon.textContent = '🔍';
+  } else {
+    badge.classList.add('badge-threat'); badgeText.textContent = 'Alerte';
+    statusText.textContent = threats.length + ' menace' + (threats.length > 1 ? 's' : '') + ' détectée' + (threats.length > 1 ? 's' : '');
+    statusText.style.color = '#ef4444'; shieldIcon.textContent = '⚠️';
+  }
+}
+
+function toggleScan() {
+  if (isScanning) { stopScan(); } else { startScan(); }
+}
+
+function startScan() {
+  isScanning = true; threats = [];
+  renderThreats(); updateThreatSection();
+  document.getElementById('scan-btn').className = 'scan-btn scan-btn-stop';
+  document.getElementById('scan-btn').innerHTML = '⏹ Arrêter le scan';
+  document.getElementById('progress-box').style.display = 'block';
+  setStatus('scanning');
+
+  const scanThreats = fakeThreats.filter(() => Math.random() > 0.5);
+  const threatPoints = scanThreats.map((_, i) => 20 + (i * 60) / Math.max(scanThreats.length, 1));
+  let prog = 0; let threatsAdded = 0;
+  const start = Date.now();
+
+  scanInterval = setInterval(() => {
+    prog += Math.random() * 1.8 + 0.4;
+    if (prog >= 100) {
+      prog = 100;
+      clearInterval(scanInterval);
+      isScanning = false;
+      document.getElementById('scan-btn').className = 'scan-btn scan-btn-start';
+      document.getElementById('scan-btn').innerHTML = '🔍 Lancer l\'analyse complète';
+      document.getElementById('progress-box').style.display = 'none';
+      const elapsed = Date.now() - start;
+      const s = Math.floor(elapsed / 1000);
+      totalScans++;
+      const entry = { date: new Date().toLocaleString('fr-FR'), filesScanned: Math.floor(prog * 1247), threats: scanThreats.length, duration: s + 's' };
+      history.unshift(entry);
+      if (history.length > 10) history.pop();
+      renderHistory();
+      document.getElementById('stat-totalscans').textContent = totalScans;
+      document.getElementById('stat-lastscan').textContent = new Date().toLocaleTimeString('fr-FR');
+      setStatus(threats.length > 0 ? 'threat' : 'protected');
+      return;
+    }
+    if (threatsAdded < scanThreats.length && prog >= threatPoints[threatsAdded]) {
+      threats.push({ ...scanThreats[threatsAdded], id: Date.now() + threatsAdded });
+      threatsAdded++;
+      renderThreats(); updateThreatSection();
+    }
+    document.getElementById('prog-bar').style.width = prog + '%';
+    document.getElementById('pct-text').textContent = Math.round(prog) + '%';
+    document.getElementById('files-scanned').textContent = Math.floor(prog * 1247).toLocaleString();
+    document.getElementById('threats-count').textContent = threats.length;
+    document.getElementById('threats-count').style.color = threats.length > 0 ? '#ef4444' : '#22c55e';
+    document.getElementById('cur-file').textContent = fakePaths[Math.floor(Math.random() * fakePaths.length)];
+  }, 80);
+}
+
+function stopScan() {
+  clearInterval(scanInterval); isScanning = false;
+  document.getElementById('scan-btn').className = 'scan-btn scan-btn-start';
+  document.getElementById('scan-btn').innerHTML = '🔍 Lancer l\'analyse complète';
+  document.getElementById('progress-box').style.display = 'none';
+  setStatus(threats.length > 0 ? 'threat' : 'protected');
+}
+
+function renderThreats() {
+  const list = document.getElementById('threats-list');
+  list.innerHTML = '';
+  threats.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'threat-item';
+    div.innerHTML = '<div><div class="threat-name">' + t.name + '</div><div class="threat-path">' + t.path + '</div></div><button class="del-btn" onclick="removeThreat(' + t.id + ')">🗑️</button>';
+    list.appendChild(div);
+  });
+  document.getElementById('threat-count-label').textContent = threats.length;
+}
+
+function updateThreatSection() {
+  document.getElementById('threats-section').style.display = threats.length > 0 ? 'block' : 'none';
+}
+
+function removeThreat(id) {
+  threats = threats.filter(t => t.id !== id);
+  totalRemoved++;
+  document.getElementById('stat-removed').textContent = totalRemoved;
+  renderThreats(); updateThreatSection();
+  if (!isScanning) setStatus(threats.length > 0 ? 'threat' : 'protected');
+}
+
+function removeAllThreats() {
+  totalRemoved += threats.length;
+  document.getElementById('stat-removed').textContent = totalRemoved;
+  threats = [];
+  renderThreats(); updateThreatSection();
+  if (!isScanning) setStatus('protected');
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const empty = document.getElementById('empty-history');
+  list.innerHTML = '';
+  if (history.length === 0) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  history.forEach(h => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    const icon = h.threats > 0 ? '⚠️' : '✅';
+    const iconBg = h.threats > 0 ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)';
+    const badge = h.threats > 0 ? '<span class="history-badge badge-threat2">' + h.threats + ' menace' + (h.threats > 1 ? 's' : '') + '</span>' : '<span class="history-badge badge-clean">Propre</span>';
+    div.innerHTML = '<div style="display:flex;align-items:center"><div class="history-icon" style="background:' + iconBg + '">' + icon + '</div><div><div class="history-date">' + h.date + '</div><div class="history-detail">' + h.filesScanned.toLocaleString() + ' fichiers · ' + h.duration + '</div></div></div>' + badge;
+    list.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
